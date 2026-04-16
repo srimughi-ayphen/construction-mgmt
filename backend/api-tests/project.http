@@ -1,0 +1,50 @@
+@base = http://localhost:3001/api/v1
+
+### 13. List all projects (paginated)
+GET {{base}}/projects
+
+### 14. Filter by status
+GET {{base}}/projects?status=active
+
+### 15. Sort by start_date ascending
+GET {{base}}/projects?sortBy=start_date&sortOrder=asc
+
+### 16. Create a project
+# @name newProject
+POST {{base}}/projects
+Content-Type: application/json
+
+{
+  "name": "City Hall Renovation",
+  "description": "Full structural renovation of the east wing.",
+  "status": "planning",
+  "start_date": "2026-05-01",
+  "end_date": "2026-12-31",
+  "created_by": "d41ab5a3-a41b-4388-8530-4bbfbb33b66f"
+}
+
+### 17. Get project with creator details
+GET {{base}}/projects/{{newProject.response.body.data.id}}
+
+### 18. Update project status
+PUT {{base}}/projects/{{newProject.response.body.data.id}}
+Content-Type: application/json
+
+{ "status": "active" }
+
+### 19. Validate - end_date before start_date
+POST {{base}}/projects
+Content-Type: application/json
+
+{
+  "name": "Bad Dates Project",
+  "start_date": "2026-12-01",
+  "end_date": "2027-01-01",
+  "created_by": "d41ab5a3-a41b-4388-8530-4bbfbb33b66f"
+}
+
+### 20. Soft delete project
+DELETE {{base}}/projects/{{newProject.response.body.data.id}}
+
+### 21. Confirm deleted project is not in list
+GET {{base}}/projects

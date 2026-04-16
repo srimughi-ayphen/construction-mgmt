@@ -1,0 +1,342 @@
+### ============================================================
+### MILESTONE MODULE — API LIFECYCLE TESTS
+### File: backend/api-tests/milestone.http
+### ============================================================
+### HOW TO USE:
+### 1. Install REST Client extension in VS Code
+### 2. Run: npm run dev
+### 3. Run Block 0 first to get your seed IDs
+### 4. Paste IDs into @variables below
+### 5. Send each request top to bottom
+### ============================================================
+
+
+### ============================================================
+### BLOCK 0 — GET SEED IDs
+### ============================================================
+
+
+### 0.1 — Get all projects (copy a project ID)
+GET http://localhost:3001/api/v1/projects
+Content-Type: application/json
+
+###
+
+### ✏️ PASTE your project ID here after running 0.1
+@projectId = ed8f395b-c3f8-444f-80e8-8244911a97f4
+
+
+### ============================================================
+### BLOCK 1 — CREATE
+### ============================================================
+
+
+### 1.1 — ✅ Create milestone (expect 201)
+# @name milestone
+POST http://localhost:3001/api/v1/projects/{{projectId}}/milestones
+Content-Type: application/json
+
+{
+  "name": "Structural Assessment Complete",
+  "due_date": "2026-12-04"
+}
+
+###
+
+### ✏️ PASTE milestone ID here after running 1.1
+@milestoneId = 511419a-4db1-45b8-bdec-764e6b25a073
+
+### 1.2 — ❌ NEGATIVE: name too short — under 2 chars (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/milestones
+Content-Type: application/json
+
+{
+  "name": "A",
+  "due_date": "2026-06-30"
+}
+
+###
+
+### 1.3 — ❌ NEGATIVE: due_date wrong format (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/milestones
+Content-Type: application/json
+
+{
+  "name": "Format Error Milestone",
+  "due_date": "30-06-2026"
+}
+
+###
+
+### 1.4 — ❌ NEGATIVE: due_date before project start_date (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/milestones
+Content-Type: application/json
+
+{
+  "name": "Too Early Milestone",
+  "due_date": "2000-01-01"
+}
+
+###
+
+### 1.5 — ❌ NEGATIVE: due_date after project end_date (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/milestones
+Content-Type: application/json
+
+{
+  "name": "Too Late Milestone",
+  "due_date": "2099-12-31"
+}
+
+###
+
+### 1.6 — ❌ NEGATIVE: missing name field (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/milestones
+Content-Type: application/json
+
+{
+  "due_date": "2026-06-30"
+}
+
+###
+
+### 1.7 — ❌ NEGATIVE: missing due_date field (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/milestones
+Content-Type: application/json
+
+{
+  "name": "Missing Date Milestone"
+}
+
+###
+
+### 1.8 — ❌ NEGATIVE: project does not exist (expect 404)
+POST http://localhost:3001/api/v1/projects/00000000-0000-0000-0000-000000000000/milestones
+Content-Type: application/json
+
+{
+  "name": "Ghost Project Milestone",
+  "due_date": "2026-06-30"
+}
+
+###
+
+
+### ============================================================
+### BLOCK 2 — READ
+### ============================================================
+
+
+### 2.1 — ✅ Get milestone by ID (expect 200)
+GET http://localhost:3001/api/v1/milestones/{{milestoneId}}
+Content-Type: application/json
+
+###
+
+### 2.2 — ✅ List all milestones for the project (expect 200, array)
+
+GET http://localhost:3001/api/v1/projects/{{projectId}}/milestones
+Content-Type: application/json
+
+###
+
+### 2.3 — ❌ NEGATIVE: milestone ID does not exist (expect 404)
+GET http://localhost:3001/api/v1/milestones/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+###
+
+### 2.4 — ❌ NEGATIVE: project ID does not exist (expect 404)
+GET http://localhost:3001/api/v1/projects/00000000-0000-0000-0000-000000000000/milestones
+Content-Type: application/json
+
+###
+
+
+### ============================================================
+### BLOCK 3 — UPDATE
+### ============================================================
+
+
+### 3.1 — ✅ Update milestone name (expect 200)
+PUT http://localhost:3001/api/v1/milestones/{{milestoneId}}
+Content-Type: application/json
+
+{
+  "name": "Structural Assessment Complete - Revised"
+}
+
+###
+
+### 3.2 — ✅ Update due_date only (expect 200)
+PUT http://localhost:3001/api/v1/milestones/{{milestoneId}}
+Content-Type: application/json
+
+{
+  "due_date": "2026-07-15"
+}
+
+###
+
+### 3.3 — ✅ Update both name and due_date (expect 200)
+PUT http://localhost:3001/api/v1/milestones/{{milestoneId}}
+Content-Type: application/json
+
+{
+  "name": "Foundation Sign-Off",
+  "due_date": "2026-07-01"
+}
+
+###
+
+### 3.4 — ❌ NEGATIVE: empty body — no fields provided (expect 400)
+PUT http://localhost:3001/api/v1/milestones/{{milestoneId}}
+Content-Type: application/json
+
+{}
+
+###
+
+### 3.5 — ❌ NEGATIVE: name too short (expect 400)
+PUT http://localhost:3001/api/v1/milestones/{{milestoneId}}
+Content-Type: application/json
+
+{
+  "name": "X"
+}
+
+###
+
+### 3.6 — ❌ NEGATIVE: wrong date format (expect 400)
+PUT http://localhost:3001/api/v1/milestones/{{milestoneId}}
+Content-Type: application/json
+
+{
+  "due_date": "July 15 2026"
+}
+
+###
+
+### 3.7 — ❌ NEGATIVE: milestone does not exist (expect 404)
+PUT http://localhost:3001/api/v1/milestones/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+{
+  "name": "Ghost Update"
+}
+
+###
+
+
+### ============================================================
+### BLOCK 4 — COMPLETE (one-way door)
+### ============================================================
+
+
+### 4.1 — ✅ Mark milestone as complete (expect 200, is_completed: true)
+PATCH http://localhost:3001/api/v1/milestones/{{milestoneId}}/complete
+Content-Type: application/json
+
+###
+
+### 4.2 — ✅ Verify is_completed is now true (expect 200)
+GET http://localhost:3001/api/v1/milestones/{{milestoneId}}
+Content-Type: application/json
+
+###
+
+### 4.3 — ❌ NEGATIVE: complete an already-completed milestone (expect 400)
+PATCH http://localhost:3001/api/v1/milestones/{{milestoneId}}/complete
+Content-Type: application/json
+
+###
+
+### 4.4 — ❌ NEGATIVE: complete a milestone that does not exist (expect 404)
+PATCH http://localhost:3001/api/v1/milestones/00000000-0000-0000-0000-000000000000/complete
+Content-Type: application/json
+
+###
+
+
+### ============================================================
+### BLOCK 5 — DELETE
+### ============================================================
+
+
+### 5.1 — ✅ Create a disposable milestone to delete (expect 201)
+# @name disposableMilestone
+POST http://localhost:3001/api/v1/projects/{{projectId}}/milestones
+Content-Type: application/json
+
+{
+  "name": "To Be Deleted",
+  "due_date": "2026-08-01"
+}
+
+###
+
+### ✏️ PASTE disposable milestone ID here after running 5.1
+@disposableMilestoneId = PASTE_DISPOSABLE_MILESTONE_UUID_HERE
+
+### 5.2 — ✅ Delete the disposable milestone (expect 204 — empty body)
+DELETE http://localhost:3001/api/v1/milestones/{{disposableMilestoneId}}
+Content-Type: application/json
+
+###
+
+### 5.3 — ❌ NEGATIVE: Get the deleted milestone (expect 404)
+GET http://localhost:3001/api/v1/milestones/{{disposableMilestoneId}}
+Content-Type: application/json
+
+###
+
+### 5.4 — ❌ NEGATIVE: Delete a milestone that does not exist (expect 404)
+DELETE http://localhost:3001/api/v1/milestones/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+###
+
+
+### ============================================================
+### CHECKLIST — MILESTONE MODULE
+### ============================================================
+###
+###  BLOCK 1 — Create
+###  [ ] 1.1  POST valid milestone        → 201, id in response
+###  [ ] 1.2  POST name too short         → 400
+###  [ ] 1.3  POST wrong date format      → 400
+###  [ ] 1.4  POST date before start      → 400
+###  [ ] 1.5  POST date after end         → 400
+###  [ ] 1.6  POST missing name           → 400
+###  [ ] 1.7  POST missing due_date       → 400
+###  [ ] 1.8  POST ghost project          → 404
+###
+###  BLOCK 2 — Read
+###  [ ] 2.1  GET by ID                   → 200
+###  [ ] 2.2  GET list for project        → 200, array
+###  [ ] 2.3  GET non-existent            → 404
+###  [ ] 2.4  GET for ghost project       → 404
+###
+###  BLOCK 3 — Update
+###  [ ] 3.1  PUT name only               → 200
+###  [ ] 3.2  PUT due_date only           → 200
+###  [ ] 3.3  PUT both fields             → 200
+###  [ ] 3.4  PUT empty body              → 400
+###  [ ] 3.5  PUT name too short          → 400
+###  [ ] 3.6  PUT wrong date format       → 400
+###  [ ] 3.7  PUT non-existent            → 404
+###
+###  BLOCK 4 — Complete
+###  [ ] 4.1  PATCH complete              → 200, is_completed: true
+###  [ ] 4.2  GET verify completed        → 200, is_completed: true
+###  [ ] 4.3  PATCH complete again        → 400
+###  [ ] 4.4  PATCH complete ghost        → 404
+###
+###  BLOCK 5 — Delete
+###  [ ] 5.1  POST disposable milestone   → 201
+###  [ ] 5.2  DELETE it                   → 204
+###  [ ] 5.3  GET after delete            → 404
+###  [ ] 5.4  DELETE non-existent         → 404
+###
+### ✅ 22 requests — all passing = Milestone module complete
+### ============================================================

@@ -1,0 +1,60 @@
+@base = http://localhost:3001/api/v1
+
+### 1. List all active users
+GET {{base}}/users
+
+### 2. Filter by role
+GET {{base}}/users?role=worker
+
+### 3. Include inactive users
+GET {{base}}/users?includeInactive=true
+
+### 4. Create a new user
+# @name newUser
+POST {{base}}/users
+Content-Type: application/json
+
+{
+  "name": "Siva Engineer",
+  "email": "siva@build.com",
+  "password": "Password123!",
+  "role": "worker"
+}
+
+### 5. Get created user by ID
+GET {{base}}/users/{{newUser.response.body.data.id}}
+
+### 6. Update user
+PUT {{base}}/users/{{newUser.response.body.data.id}}
+Content-Type: application/json
+
+{ "name": "Eve Engineer (Senior)" }
+
+### 7. Soft delete user
+DELETE {{base}}/users/{{newUser.response.body.data.id}}
+
+### 8. Confirm user is inactive (not in default list)
+GET {{base}}/users
+
+### 9. Confirm user appears with includeInactive
+GET {{base}}/users?includeInactive=true
+
+### 10. 404 test - nonexistent user
+GET {{base}}/users/00000000-0000-0000-0000-000000000000
+
+### 11. Validation - missing required field
+POST {{base}}/users
+Content-Type: application/json
+
+{ "name": "No Email" }
+
+### 12. Conflict - duplicate email
+POST {{base}}/users
+Content-Type: application/json
+
+{
+  "name": "Duplicate",
+  "email": "alice@build.com",
+  "password": "Password123!",
+  "role": "worker"
+}

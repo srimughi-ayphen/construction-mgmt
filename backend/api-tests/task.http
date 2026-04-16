@@ -1,0 +1,563 @@
+### ============================================================
+### TASK MODULE — API LIFECYCLE TESTS
+### File: backend/api-tests/task.http
+### ============================================================
+### HOW TO USE:
+### 1. Install REST Client extension in VS Code
+### 2. Run: npm run dev
+### 3. Run Block 0 first to get your seed IDs
+### 4. Paste IDs into @variables below
+### 5. Send each request top to bottom
+### ============================================================
+
+
+### ============================================================
+### BLOCK 0 — GET SEED IDs
+### ============================================================
+
+
+### 0.1 — Get all users (copy manager ID)
+GET http://localhost:3001/api/v1/users
+Content-Type: application/json
+
+###
+
+### 0.2 — Get all projects (copy a project ID)
+GET http://localhost:3001/api/v1/projects
+Content-Type: application/json
+
+###
+
+### 0.3 — Create a milestone to link tasks to
+# @name seedMilestone
+POST http://localhost:3001/api/v1/projects/b53826f2-3f26-4b99-b168-8b83fe52c928/milestones
+Content-Type: application/json
+
+{
+  "name": "Task Test Milestone",
+  "due_date": "2026-08-31"
+}
+
+###
+
+### ✏️ PASTE IDs here after running 0.1, 0.2, 0.3
+@projectId   = PASTE_PROJECT_UUID_HERE
+@managerId   = PASTE_MANAGER_UUID_HERE
+@milestoneId = PASTE_MILESTONE_UUID_HERE
+
+
+### ============================================================
+### BLOCK 1 — CREATE
+### ============================================================
+
+
+### 1.1 — ✅ Create a full task with all fields (expect 201)
+# @name task
+POST http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Prepare load-bearing analysis report",
+  "description": "Document all load calculations for the north pylon.",
+  "priority": "high",
+  "due_date": "2026-07-15",
+  "milestone_id": "{{milestoneId}}",
+  "created_by": "{{managerId}}"
+}
+
+###
+
+### ✏️ PASTE task ID here after running 1.1
+@taskId = PASTE_TASK_UUID_HERE
+
+### 1.2 — ✅ Create a minimal task (only required fields) (expect 201)
+# @name minimalTask
+POST http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Quick inspection check",
+  "created_by": "{{managerId}}"
+}
+
+###
+
+### ✏️ PASTE minimal task ID here after running 1.2
+@minimalTaskId = PASTE_MINIMAL_TASK_UUID_HERE
+
+### 1.3 — ❌ NEGATIVE: title too short — under 2 chars (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+{
+  "title": "A",
+  "created_by": "{{managerId}}"
+}
+
+###
+
+### 1.4 — ❌ NEGATIVE: invalid priority value (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Bad Priority Task",
+  "created_by": "{{managerId}}",
+  "priority": "urgent"
+}
+
+###
+
+### 1.5 — ❌ NEGATIVE: due_date wrong format (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Bad Date Task",
+  "created_by": "{{managerId}}",
+  "due_date": "15/07/2026"
+}
+
+###
+
+### 1.6 — ❌ NEGATIVE: due_date exceeds project end_date (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Too Late Task",
+  "created_by": "{{managerId}}",
+  "due_date": "2099-12-31"
+}
+
+###
+
+### 1.7 — ❌ NEGATIVE: milestone_id belongs to a different project (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Wrong Milestone Task",
+  "created_by": "{{managerId}}",
+  "milestone_id": "00000000-0000-0000-0000-000000000000"
+}
+
+###
+
+### 1.8 — ❌ NEGATIVE: missing title (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+{
+  "created_by": "{{managerId}}"
+}
+
+###
+
+### 1.9 — ❌ NEGATIVE: missing created_by (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+{
+  "title": "No Creator Task"
+}
+
+###
+
+### 1.10 — ❌ NEGATIVE: created_by is not a valid UUID (expect 400)
+POST http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Bad Creator UUID",
+  "created_by": "not-a-uuid"
+}
+
+###
+
+### 1.11 — ❌ NEGATIVE: project does not exist (expect 404)
+POST http://localhost:3001/api/v1/projects/00000000-0000-0000-0000-000000000000/tasks
+Content-Type: application/json
+
+{
+  "title": "Ghost Project Task",
+  "created_by": "{{managerId}}"
+}
+
+###
+
+
+### ============================================================
+### BLOCK 2 — READ
+### ============================================================
+
+
+### 2.1 — ✅ Get task by ID (expect 200, includes milestone + assignees)
+GET http://localhost:3001/api/v1/tasks/{{taskId}}
+Content-Type: application/json
+
+###
+
+### 2.2 — ✅ List all tasks for the project (expect 200, paginated)
+GET http://localhost:3001/api/v1/projects/{{projectId}}/tasks
+Content-Type: application/json
+
+###
+
+### 2.3 — ✅ Filter tasks by status=todo (expect 200)
+GET http://localhost:3001/api/v1/projects/{{projectId}}/tasks?status=todo
+Content-Type: application/json
+
+###
+
+### 2.4 — ✅ Filter tasks by priority=high (expect 200)
+GET http://localhost:3001/api/v1/projects/{{projectId}}/tasks?priority=high
+Content-Type: application/json
+
+###
+
+### 2.5 — ✅ Filter tasks by milestone_id (expect 200)
+GET http://localhost:3001/api/v1/projects/{{projectId}}/tasks?milestone_id={{milestoneId}}
+Content-Type: application/json
+
+###
+
+### 2.6 — ✅ Filter with pagination (expect 200, meta block present)
+GET http://localhost:3001/api/v1/projects/{{projectId}}/tasks?page=1&limit=5
+Content-Type: application/json
+
+###
+
+### 2.7 — ❌ NEGATIVE: task does not exist (expect 404)
+GET http://localhost:3001/api/v1/tasks/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+###
+
+### 2.8 — ❌ NEGATIVE: project does not exist (expect 404)
+GET http://localhost:3001/api/v1/projects/00000000-0000-0000-0000-000000000000/tasks
+Content-Type: application/json
+
+###
+
+
+### ============================================================
+### BLOCK 3 — UPDATE
+### ============================================================
+
+
+### 3.1 — ✅ Update title only (expect 200)
+PUT http://localhost:3001/api/v1/tasks/{{taskId}}
+Content-Type: application/json
+
+{
+  "title": "Prepare load-bearing analysis report - Revised"
+}
+
+###
+
+### 3.2 — ✅ Update priority only (expect 200)
+PUT http://localhost:3001/api/v1/tasks/{{taskId}}
+Content-Type: application/json
+
+{
+  "priority": "critical"
+}
+
+###
+
+### 3.3 — ✅ Update description only (expect 200)
+PUT http://localhost:3001/api/v1/tasks/{{taskId}}
+Content-Type: application/json
+
+{
+  "description": "Updated: Include both north and south pylon calculations."
+}
+
+###
+
+### 3.4 — ✅ Remove milestone linkage (set to null) (expect 200)
+PUT http://localhost:3001/api/v1/tasks/{{taskId}}
+Content-Type: application/json
+
+{
+  "milestone_id": null
+}
+
+###
+
+### 3.5 — ✅ Re-link to milestone (expect 200)
+PUT http://localhost:3001/api/v1/tasks/{{taskId}}
+Content-Type: application/json
+
+{
+  "milestone_id": "{{milestoneId}}"
+}
+
+###
+
+### 3.6 — ❌ NEGATIVE: empty body (expect 400)
+PUT http://localhost:3001/api/v1/tasks/{{taskId}}
+Content-Type: application/json
+
+{}
+
+###
+
+### 3.7 — ❌ NEGATIVE: title too short (expect 400)
+PUT http://localhost:3001/api/v1/tasks/{{taskId}}
+Content-Type: application/json
+
+{
+  "title": "X"
+}
+
+###
+
+### 3.8 — ❌ NEGATIVE: invalid priority (expect 400)
+PUT http://localhost:3001/api/v1/tasks/{{taskId}}
+Content-Type: application/json
+
+{
+  "priority": "extreme"
+}
+
+###
+
+### 3.9 — ❌ NEGATIVE: task does not exist (expect 404)
+PUT http://localhost:3001/api/v1/tasks/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+{
+  "title": "Ghost Task Update"
+}
+
+###
+
+
+### ============================================================
+### BLOCK 4 — STATUS MACHINE
+### Valid path: todo → in_progress → blocked → in_progress → in_review → done
+### ============================================================
+
+
+### 4.1 — ✅ todo → in_progress (expect 200)
+PATCH http://localhost:3001/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+
+###
+
+### 4.2 — ✅ in_progress → blocked (expect 200)
+PATCH http://localhost:3001/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": "blocked"
+}
+
+###
+
+### 4.3 — ✅ blocked → in_progress (expect 200)
+PATCH http://localhost:3001/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+
+###
+
+### 4.4 — ✅ in_progress → in_review (expect 200)
+PATCH http://localhost:3001/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": "in_review"
+}
+
+###
+
+### 4.5 — ✅ in_review → done (expect 200, terminal state)
+PATCH http://localhost:3001/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": "done"
+}
+
+###
+
+### 4.6 — ❌ NEGATIVE: done → todo (terminal — expect 400)
+PATCH http://localhost:3001/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": "todo"
+}
+
+###
+
+### 4.7 — ❌ NEGATIVE: done → in_progress (terminal — expect 400)
+PATCH http://localhost:3001/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+
+###
+
+### 4.8 — ❌ NEGATIVE: done → blocked (terminal — expect 400)
+PATCH http://localhost:3001/api/v1/tasks/{{taskId}}/status
+Content-Type: application/json
+
+{
+  "status": "blocked"
+}
+
+###
+
+### 4.9 — ❌ NEGATIVE: todo → done (skip — expect 400)
+PATCH http://localhost:3001/api/v1/tasks/{{minimalTaskId}}/status
+Content-Type: application/json
+
+{
+  "status": "done"
+}
+
+###
+
+### 4.10 — ❌ NEGATIVE: todo → in_review (skip — expect 400)
+PATCH http://localhost:3001/api/v1/tasks/{{minimalTaskId}}/status
+Content-Type: application/json
+
+{
+  "status": "in_review"
+}
+
+###
+
+### 4.11 — ❌ NEGATIVE: invalid status value (expect 400 from Zod)
+PATCH http://localhost:3001/api/v1/tasks/{{minimalTaskId}}/status
+Content-Type: application/json
+
+{
+  "status": "pending"
+}
+
+###
+
+### 4.12 — ❌ NEGATIVE: missing status field entirely (expect 400)
+PATCH http://localhost:3001/api/v1/tasks/{{minimalTaskId}}/status
+Content-Type: application/json
+
+{}
+
+###
+
+### 4.13 — ❌ NEGATIVE: task does not exist (expect 404)
+PATCH http://localhost:3001/api/v1/tasks/00000000-0000-0000-0000-000000000000/status
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+
+###
+
+
+### ============================================================
+### BLOCK 5 — DELETE
+### ============================================================
+
+
+### 5.1 — ✅ Delete minimalTask (expect 204 — empty body)
+DELETE http://localhost:3001/api/v1/tasks/{{minimalTaskId}}
+Content-Type: application/json
+
+###
+
+### 5.2 — ❌ NEGATIVE: Get deleted task (expect 404)
+GET http://localhost:3001/api/v1/tasks/{{minimalTaskId}}
+Content-Type: application/json
+
+###
+
+### 5.3 — ❌ NEGATIVE: Delete again (expect 404)
+DELETE http://localhost:3001/api/v1/tasks/{{minimalTaskId}}
+Content-Type: application/json
+
+###
+
+### 5.4 — ❌ NEGATIVE: Delete non-existent task (expect 404)
+DELETE http://localhost:3001/api/v1/tasks/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+###
+
+
+### ============================================================
+### CHECKLIST — TASK MODULE
+### ============================================================
+###
+###  BLOCK 1 — Create
+###  [ ] 1.1   POST full task              → 201
+###  [ ] 1.2   POST minimal task           → 201
+###  [ ] 1.3   POST title too short        → 400
+###  [ ] 1.4   POST invalid priority       → 400
+###  [ ] 1.5   POST wrong date format      → 400
+###  [ ] 1.6   POST due_date too late      → 400
+###  [ ] 1.7   POST wrong milestone        → 400
+###  [ ] 1.8   POST missing title          → 400
+###  [ ] 1.9   POST missing created_by     → 400
+###  [ ] 1.10  POST bad created_by UUID    → 400
+###  [ ] 1.11  POST ghost project          → 404
+###
+###  BLOCK 2 — Read
+###  [ ] 2.1   GET by ID                   → 200, milestone + assignees
+###  [ ] 2.2   GET list for project        → 200, paginated
+###  [ ] 2.3   GET filter by status        → 200
+###  [ ] 2.4   GET filter by priority      → 200
+###  [ ] 2.5   GET filter by milestone     → 200
+###  [ ] 2.6   GET with pagination         → 200, meta block present
+###  [ ] 2.7   GET non-existent task       → 404
+###  [ ] 2.8   GET ghost project           → 404
+###
+###  BLOCK 3 — Update
+###  [ ] 3.1   PUT title only              → 200
+###  [ ] 3.2   PUT priority only           → 200
+###  [ ] 3.3   PUT description only        → 200
+###  [ ] 3.4   PUT milestone_id null       → 200
+###  [ ] 3.5   PUT re-link milestone       → 200
+###  [ ] 3.6   PUT empty body              → 400
+###  [ ] 3.7   PUT title too short         → 400
+###  [ ] 3.8   PUT invalid priority        → 400
+###  [ ] 3.9   PUT non-existent            → 404
+###
+###  BLOCK 4 — Status Machine
+###  [ ] 4.1   todo → in_progress          → 200
+###  [ ] 4.2   in_progress → blocked       → 200
+###  [ ] 4.3   blocked → in_progress       → 200
+###  [ ] 4.4   in_progress → in_review     → 200
+###  [ ] 4.5   in_review → done            → 200
+###  [ ] 4.6   done → todo (terminal)      → 400
+###  [ ] 4.7   done → in_progress          → 400
+###  [ ] 4.8   done → blocked              → 400
+###  [ ] 4.9   todo → done (skip)          → 400
+###  [ ] 4.10  todo → in_review (skip)     → 400
+###  [ ] 4.11  invalid status value        → 400
+###  [ ] 4.12  missing status field        → 400
+###  [ ] 4.13  PATCH non-existent          → 404
+###
+###  BLOCK 5 — Delete
+###  [ ] 5.1   DELETE task                 → 204
+###  [ ] 5.2   GET after delete            → 404
+###  [ ] 5.3   DELETE again                → 404
+###  [ ] 5.4   DELETE non-existent         → 404
+###
+### ✅ 38 requests — all passing = Task module complete
+### ============================================================
